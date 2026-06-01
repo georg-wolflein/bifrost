@@ -8,6 +8,10 @@ Official Helm charts for deploying [Bifrost](https://github.com/maximhq/bifrost)
 
 ## Changelog
 
+### Upcoming [2.1.23]
+
+- Added `bifrost.governance.complexityAnalyzerConfig` to configure complexity router analyzer boundaries and keyword lists from Helm. The value renders into `governance.complexity_analyzer_config` in the generated `config.json` and remains opt-in, so existing installs are unchanged unless the value is set.
+
 ### 2.1.22
 
 - Added `bifrost.governance.roles` array to `values.yaml`, `values.schema.json`, and `_helpers.tpl`. Each role requires a `name` and accepts optional `description`, `dac` (`own-data` | `team-data` | `all-data`, default `all-data`), `access_profile`, and `permissions[]` (`resource` + `operation`).
@@ -20,7 +24,6 @@ Official Helm charts for deploying [Bifrost](https://github.com/maximhq/bifrost)
 - Added OAuth MCP client config example to `values.yaml` showing `authType: oauth` with `oauthConfigId`.
 - Added `bifrost.sourceOfTruth` (`split` | `config.json`, optional). When set to `"config.json"`, sections explicitly present in the file become authoritative on startup — database-only rows for those sections are pruned. Omitting the field preserves the default `"split"` merge behavior.
 - Added `allow_private_network` to `networkConfig` in `values.schema.json`. When `true`, allows connections to RFC 1918 private IPs (10.x, 172.16.x, 192.168.x) — useful for providers on a k8s pod network, LAN, or private VPC.
-
 
 ### 2.1.21
 
