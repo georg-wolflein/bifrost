@@ -34,6 +34,11 @@ type ModelCatalog struct {
 	live      *live.Store
 	keyconf   *keyconfig.Store
 
+	// MCP library sync configuration (protected by syncMu)
+	mcpLibraryURL          string
+	lastMCPLibrarySyncedAt time.Time
+	syncMu                 sync.RWMutex
+
 	shouldSyncGate func(ctx context.Context) bool
 	afterSyncHook  func(ctx context.Context)
 
@@ -55,6 +60,10 @@ func Init(ctx context.Context, config *Config, configStore configstore.ConfigSto
 	if config != nil && config.ModelParametersURL != nil && *config.ModelParametersURL != "" {
 		modelParametersURL = *config.ModelParametersURL
 	}
+	mcpLibraryURL := DefaultMCPLibraryURL
+	if config != nil && config.MCPLibraryURL != nil && *config.MCPLibraryURL != "" {
+		mcpLibraryURL = *config.MCPLibraryURL
+	}
 	syncInterval := DefaultSyncInterval
 	if config != nil && config.PricingSyncInterval != nil {
 		syncInterval = time.Duration(*config.PricingSyncInterval) * time.Second
@@ -65,6 +74,7 @@ func Init(ctx context.Context, config *Config, configStore configstore.ConfigSto
 	logger.Info("pricing sync interval set to %v (scheduler checks every %v)", syncInterval, syncWorkerTickerPeriod)
 
 	mc := &ModelCatalog{
+		mcpLibraryURL:          mcpLibraryURL,
 		configStore:            configStore,
 		logger:                 logger,
 		distributedLockManager: configstore.NewDistributedLockManager(configStore, logger, configstore.WithDefaultTTL(30*time.Second)),
@@ -182,6 +192,23 @@ func Init(ctx context.Context, config *Config, configStore configstore.ConfigSto
 		if paramsErr != nil {
 			return nil, paramsErr
 		}
+
+		// MCP library catalog: sync from URL in the background so a slow/unreachable
+		// source never blocks startup. Non-fatal — the page shows an empty state
+		// until the first successful sync lands.
+		mc.wg.Add(1)
+		go func() {
+			defer mc.wg.Done()
+			if err := mc.withDistributedLock(mc.syncCtx, "model_catalog_mcp_library_startup_sync", 10, func() error {
+				return mc.syncMCPLibrary(mc.syncCtx)
+			}); err != nil {
+				mc.logger.Warn("background startup MCP library sync failed: %v", err)
+			} else {
+				mc.syncMu.Lock()
+				mc.lastMCPLibrarySyncedAt = time.Now()
+				mc.syncMu.Unlock()
+			}
+		}()
 	} else {
 		if err := mc.datasheet.LoadFromURLIntoMemory(ctx); err != nil {
 			return nil, fmt.Errorf("failed to load pricing data into memory: %w", err)
@@ -249,6 +276,14 @@ func (mc *ModelCatalog) UpdateSyncConfig(ctx context.Context, config *Config) er
 	if config != nil && config.ModelParametersURL != nil && *config.ModelParametersURL != "" {
 		modelParametersURL = *config.ModelParametersURL
 	}
+	mcpLibraryURL := DefaultMCPLibraryURL
+	if config != nil && config.MCPLibraryURL != nil && *config.MCPLibraryURL != "" {
+		mcpLibraryURL = *config.MCPLibraryURL
+	}
+	mc.syncMu.Lock()
+	mc.mcpLibraryURL = mcpLibraryURL
+	mc.syncMu.Unlock()
+
 	syncInterval := DefaultSyncInterval
 	if config != nil && config.PricingSyncInterval != nil {
 		syncInterval = time.Duration(*config.PricingSyncInterval) * time.Second
@@ -299,6 +334,22 @@ func (mc *ModelCatalog) ForceReloadPricing(ctx context.Context) error {
 			paramsErr = fmt.Errorf("failed to sync model parameters: %w", err)
 		}
 	}()
+
+	// MCP library sync runs alongside but is non-fatal: a failure here must not
+	// block a pricing/params force-reload. It is logged and the last-sync
+	// timestamp is only advanced on success.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := mc.syncMCPLibrary(ctx); err != nil {
+			mc.logger.Warn("MCP library sync during force-reload failed: %v", err)
+			return
+		}
+		mc.syncMu.Lock()
+		mc.lastMCPLibrarySyncedAt = time.Now()
+		mc.syncMu.Unlock()
+	}()
+
 	wg.Wait()
 	if pricingErr != nil {
 		return pricingErr
@@ -371,8 +422,8 @@ func (mc *ModelCatalog) syncTick(ctx context.Context) {
 	mc.logger.Debug("starting model catalog background sync")
 	if err := mc.withDistributedLock(ctx, "model_catalog_pricing_sync", 10, func() error {
 		var wg sync.WaitGroup
-		var pricingErr, paramsErr error
-		wg.Add(2)
+		var pricingErr, paramsErr, mcpLibErr error
+		wg.Add(3)
 		go func() {
 			defer wg.Done()
 			if err := mc.runPricingSync(ctx); err != nil {
@@ -387,12 +438,26 @@ func (mc *ModelCatalog) syncTick(ctx context.Context) {
 				paramsErr = err
 			}
 		}()
+		// MCP library sync runs alongside pricing/params but is non-fatal: a
+		// failure must not block the pricing sync from being marked complete.
+		go func() {
+			defer wg.Done()
+			if err := mc.syncMCPLibrary(ctx); err != nil {
+				mc.logger.Error("background MCP library sync failed: %v", err)
+				mcpLibErr = err
+			}
+		}()
 		wg.Wait()
 		if pricingErr == nil && paramsErr == nil {
 			if mc.afterSyncHook != nil {
 				mc.afterSyncHook(ctx)
 			}
 			mc.datasheet.MarkSynced(time.Now())
+		}
+		if mcpLibErr == nil {
+			mc.syncMu.Lock()
+			mc.lastMCPLibrarySyncedAt = time.Now()
+			mc.syncMu.Unlock()
 		}
 		if pricingErr != nil {
 			return pricingErr
