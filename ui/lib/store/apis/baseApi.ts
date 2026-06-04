@@ -192,6 +192,10 @@ export const baseApi = createApi({
     "MCPSessions",
     "MCPPerUserHeaderCredentials",
     "FeatureFlags",
+    "Devices",
+    "EdgeApps",
+    "EdgeMCPServers",
+    "EdgeConfig",
   ],
   endpoints: () => ({}),
 });
