@@ -1,10 +1,23 @@
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alertDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getErrorMessage, useDeleteMCPLibraryEntryMutation } from "@/lib/store";
 import type { MCPLibraryEntry } from "@/lib/types/mcp";
 import { Link } from "@tanstack/react-router";
-import { BookIcon, Globe, Library, Radio, Terminal } from "lucide-react";
+import { BookIcon, Globe, Radio, Terminal, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const MAX_VISIBLE_TAGS = 3;
 export const MCP_ICON_FALLBACK = "/images/mcp.svg";
@@ -52,10 +65,24 @@ interface MCPLibraryServerCardProps {
 	server: MCPLibraryEntry;
 	isInstalled: boolean;
 	canCreateMCPClient: boolean;
+	canDelete: boolean;
 	onInstall: (server: MCPLibraryEntry) => void;
 }
 
-export function MCPLibraryServerCard({ server, isInstalled, canCreateMCPClient, onInstall }: MCPLibraryServerCardProps) {
+export function MCPLibraryServerCard({ server, isInstalled, canCreateMCPClient, canDelete, onInstall }: MCPLibraryServerCardProps) {
+	const [deleteEntry, { isLoading: isDeleting }] = useDeleteMCPLibraryEntryMutation();
+	const [confirmOpen, setConfirmOpen] = useState(false);
+	const isCustom = server.source === "custom";
+
+	const handleDelete = async () => {
+		try {
+			await deleteEntry(server.id).unwrap();
+			toast.success(`"${server.name}" removed from the library.`);
+			setConfirmOpen(false);
+		} catch (error) {
+			toast.error(getErrorMessage(error));
+		}
+	};
 	return (
 		<Card
 			key={server.slug}
@@ -93,7 +120,10 @@ export function MCPLibraryServerCard({ server, isInstalled, canCreateMCPClient, 
 							<CardTitle className="min-w-0 pt-0.5 text-sm leading-5">
 								<span className="block truncate">{server.name}</span>
 							</CardTitle>
-							{isInstalled && <Badge variant="success">Installed</Badge>}
+							<div className="flex shrink-0 items-center gap-1.5">
+								{isCustom && <Badge variant="outline">Custom</Badge>}
+								{isInstalled && <Badge variant="success">Installed</Badge>}
+							</div>
 						</div>
 						<div className="flex min-w-0 flex-wrap items-center gap-1.5">
 							{server.category && (
@@ -144,6 +174,24 @@ export function MCPLibraryServerCard({ server, isInstalled, canCreateMCPClient, 
 					<span className="truncate">{authLabel(server.auth_type)}</span>
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
+					{canDelete && (
+						<div className="hidden group-hover:block fade-in">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => setConfirmOpen(true)}
+										aria-label={`Remove ${server.name} from library`}
+										data-testid={`mcp-library-delete-${server.slug}`}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Remove from library</TooltipContent>
+							</Tooltip>
+						</div>
+					)}
 					{server.docs_url && (
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -178,6 +226,33 @@ export function MCPLibraryServerCard({ server, isInstalled, canCreateMCPClient, 
 					)}
 				</div>
 			</CardFooter>
+
+			<AlertDialog open={confirmOpen} onOpenChange={(open) => !open && setConfirmOpen(false)}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Remove "{server.name}" from library?</AlertDialogTitle>
+						<AlertDialogDescription>
+							{isCustom
+								? "This custom server will no longer be available for members to install."
+								: "This server will be hidden from the library and will not reappear on the next catalog sync."}{" "}
+							Existing installations are not affected.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={(event) => {
+								event.preventDefault();
+								handleDelete();
+							}}
+							disabled={isDeleting}
+							data-testid={`mcp-library-delete-confirm-${server.slug}`}
+						>
+							{isDeleting ? "Removing..." : "Remove"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</Card>
 	);
 }

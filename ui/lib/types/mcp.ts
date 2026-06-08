@@ -205,8 +205,27 @@ export interface MCPLibraryEntry {
 	version?: string;
 	tags?: string[];
 	metadata?: Record<string, unknown>;
+	/** "remote" for synced rows, "custom" for org-published entries. */
+	source?: "remote" | "custom";
 	created_at: string;
 	updated_at: string;
+}
+
+/** Body for POST /api/mcp/library — publish a custom (org-internal) library entry. */
+export interface CreateMCPLibraryEntryRequest {
+	name: string;
+	description?: string;
+	category?: string;
+	connection_type: MCPConnectionType;
+	connection_url?: string;
+	stdio_config?: MCPStdioConfig;
+	auth_type?: MCPAuthType;
+	required_header_keys?: string[];
+	icon_url?: string;
+	docs_url?: string;
+	publisher?: string;
+	version?: string;
+	tags?: string[];
 }
 
 export interface GetMCPLibraryParams {

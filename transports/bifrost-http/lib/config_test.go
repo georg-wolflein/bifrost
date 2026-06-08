@@ -652,6 +652,18 @@ func (m *MockConfigStore) UpsertMCPLibraryEntry(ctx context.Context, entry *tabl
 	return nil
 }
 
+func (m *MockConfigStore) CreateCustomMCPLibraryEntry(ctx context.Context, entry *tables.TableMCPLibrary) error {
+	return nil
+}
+
+func (m *MockConfigStore) SoftDeleteMCPLibraryEntry(ctx context.Context, id uint) error {
+	return nil
+}
+
+func (m *MockConfigStore) GetProtectedMCPLibrarySlugs(ctx context.Context) ([]string, error) {
+	return nil, nil
+}
+
 func (m *MockConfigStore) DeleteMCPClientConfig(ctx context.Context, id string) error {
 	if m.mcpConfig == nil {
 		return nil

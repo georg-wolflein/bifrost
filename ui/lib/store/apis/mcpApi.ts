@@ -1,9 +1,11 @@
 import {
 	CreateMCPClientRequest,
+	CreateMCPLibraryEntryRequest,
 	GetMCPClientsParams,
 	GetMCPClientsResponse,
 	GetMCPLibraryParams,
 	GetMCPLibraryResponse,
+	MCPLibraryEntry,
 	MCPLibraryFilterData,
 	OAuthFlowResponse,
 	OAuthStatusResponse,
@@ -59,6 +61,28 @@ export const mcpApi = baseApi.injectEndpoints({
 			query: () => ({
 				url: "/mcp/library/force-sync",
 				method: "POST",
+			}),
+			invalidatesTags: ["MCPLibrary"],
+		}),
+
+		// Publish a custom (org-internal) MCP server into the library
+		createMCPLibraryEntry: builder.mutation<
+			{ status: string; message: string; entry: MCPLibraryEntry },
+			CreateMCPLibraryEntryRequest
+		>({
+			query: (data) => ({
+				url: "/mcp/library",
+				method: "POST",
+				body: data,
+			}),
+			invalidatesTags: ["MCPLibrary"],
+		}),
+
+		// Soft-delete (hide) a library entry — remote or custom — by numeric id
+		deleteMCPLibraryEntry: builder.mutation<{ status: string; message: string }, number>({
+			query: (id) => ({
+				url: `/mcp/library/${id}`,
+				method: "DELETE",
 			}),
 			invalidatesTags: ["MCPLibrary"],
 		}),
@@ -190,6 +214,8 @@ export const {
 	useGetMCPLibraryQuery,
 	useGetMCPLibraryFilterDataQuery,
 	useForceSyncMCPLibraryMutation,
+	useCreateMCPLibraryEntryMutation,
+	useDeleteMCPLibraryEntryMutation,
 	useCreateMCPClientMutation,
 	useUpdateMCPClientMutation,
 	useDeleteMCPClientMutation,
