@@ -60,9 +60,7 @@
           {
             "group": "Overview",
             "icon": "book-open-cover",
-            "pages": [
-              "overview"
-            ]
+            "pages": ["overview"]
           },
           {
             "group": "Quick Start",
@@ -102,23 +100,17 @@
           {
             "group": "Release Cadence",
             "icon": "calendar",
-            "pages": [
-              "release-cadence"
-            ]
+            "pages": ["release-cadence"]
           },
           {
             "group": "Migration Guides",
             "icon": "arrow-up-right-dots",
-            "pages": [
-              "migration-guides/v1.5.0"
-            ]
+            "pages": ["migration-guides/v1.5.0"]
           },
           {
             "group": "SDK Integrations",
             "icon": "plug",
-            "pages": [
-              "integrations/what-is-an-integration"
-            ]
+            "pages": ["integrations/what-is-an-integration"]
           },
           {
             "group": "Providers & Guides",
@@ -203,10 +195,7 @@
               {
                 "group": "Writing Plugins",
                 "icon": "code",
-                "pages": [
-                  "plugins/writing-go-plugin",
-                  "plugins/writing-wasm-plugin"
-                ]
+                "pages": ["plugins/writing-go-plugin", "plugins/writing-wasm-plugin"]
               },
               "plugins/migration-guide"
             ]
@@ -246,10 +235,7 @@
               {
                 "group": "Plugins",
                 "icon": "puzzle-piece",
-                "pages": [
-                  "features/plugins/mocker",
-                  "features/plugins/jsonparser"
-                ]
+                "pages": ["features/plugins/mocker", "features/plugins/jsonparser"]
               }
             ]
           }
@@ -262,9 +248,7 @@
           {
             "group": "Getting Started",
             "icon": "rocket",
-            "pages": [
-              "enterprise/overview"
-            ]
+            "pages": ["enterprise/overview"]
           },
           {
             "group": "Moving from OSS",
@@ -280,16 +264,12 @@
           {
             "group": "Release Cadence",
             "icon": "calendar",
-            "pages": [
-              "enterprise/release-cadence"
-            ]
+            "pages": ["enterprise/release-cadence"]
           },
           {
             "group": "Migration Guides",
             "icon": "arrow-up-right-dots",
-            "pages": [
-              "enterprise/migration-guides/v1.4.0"
-            ]
+            "pages": ["enterprise/migration-guides/v1.4.0"]
           },
           {
             "group": "Features",
@@ -326,9 +306,17 @@
           {
             "group": "Security",
             "icon": "shield",
-            "pages": [
-              "security"
-            ]
+            "pages": ["security"]
+          }
+        ]
+      },
+      {
+        "tab": "Edge",
+        "icon": "globe",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["edge/overview"]
           }
         ]
       },
@@ -385,9 +373,7 @@
               {
                 "group": "GenAI SDK",
                 "icon": "diamond",
-                "pages": [
-                  "integrations/genai-sdk/overview"
-                ]
+                "pages": ["integrations/genai-sdk/overview"]
               },
               "integrations/litellm-sdk",
               "integrations/langchain-sdk",
@@ -449,11 +435,7 @@
           {
             "group": "Platform specific guides",
             "icon": "swatchbook",
-            "pages": [
-              "deployment-guides/k8s",
-              "deployment-guides/ecs",
-              "deployment-guides/fly"
-            ]
+            "pages": ["deployment-guides/k8s", "deployment-guides/ecs", "deployment-guides/fly"]
           },
           {
             "group": "Config as Code",
@@ -753,10 +735,7 @@
               },
               {
                 "group": "September 2025",
-                "pages": [
-                  "changelogs/v1.2.22",
-                  "changelogs/v1.2.21"
-                ]
+                "pages": ["changelogs/v1.2.22", "changelogs/v1.2.21"]
               }
             ]
           },
