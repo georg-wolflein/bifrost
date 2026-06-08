@@ -579,6 +579,10 @@ export interface LogEntry {
 	metadata?: Record<string, string>; // JSON metadata (e.g., isAsyncRequest)
 }
 
+export interface LogRedactionRevealResponse {
+	mapping: Record<string, string>;
+}
+
 export interface LogFilters {
 	providers?: string[];
 	models?: string[];

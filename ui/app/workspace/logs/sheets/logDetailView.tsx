@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CodeEditor } from "@/components/ui/codeEditor";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -27,6 +28,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import { ProviderIconType, RenderProviderIcon, RoutingEngineUsedIcons } from "@/lib/constants/icons";
 import { RequestTypeColors, RequestTypeLabels, RoutingEngineUsedColors, RoutingEngineUsedLabels, Status } from "@/lib/constants/logs";
+import { getErrorMessage } from "@/lib/store";
+import { useRevealLogRedactionMappingMutation } from "@/lib/store/apis/logsApi";
 import { ContentBlock, LogEntry, ResponsesMessage } from "@/lib/types/logs";
 import { cn } from "@/lib/utils";
 import { downloadAsJson } from "@/lib/utils/browser-download";
@@ -34,7 +37,7 @@ import { formatCompactNumber } from "@/lib/utils/numbers";
 import { isJson } from "@/lib/utils/validation";
 import { Link } from "@tanstack/react-router";
 import { addMilliseconds, format } from "date-fns";
-import { AlertCircle, ChevronDown, Clipboard, Copy, Download, Loader2, MoreVertical, Trash2, Wrench } from "lucide-react";
+import { AlertCircle, ChevronDown, Clipboard, Copy, Download, Eye, Loader2, MoreVertical, Trash2, Wrench } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import BlockHeader from "../views/blockHeader";
@@ -511,6 +514,7 @@ interface LogDetailViewProps {
 	resolvedSelectedPromptName?: string; // Current prompt name from prompt-repo when `selected_prompt_id` is set; falls back to stored log name
 	loading?: boolean;
 	handleDelete?: (log: LogEntry) => void;
+	canReveal?: boolean;
 	onClose?: () => void;
 	headerAction?: ReactNode;
 	onFilterByParentRequestId?: (parentRequestId: string) => void;
@@ -521,6 +525,7 @@ export function LogDetailView({
 	resolvedSelectedPromptName,
 	loading = false,
 	handleDelete,
+	canReveal = false,
 	onClose,
 	headerAction,
 	onFilterByParentRequestId,
@@ -529,8 +534,26 @@ export function LogDetailView({
 		successMessage: "Request body copied to clipboard",
 		errorMessage: "Failed to copy request body",
 	});
+	const [revealLogRedactionMapping, { isLoading: revealLoading }] = useRevealLogRedactionMappingMutation();
+	const [revealedMappings, setRevealedMappings] = useState<Record<string, string> | null>(null);
+	const [isRevealDialogOpen, setIsRevealDialogOpen] = useState(false);
 	const allRoles: MessageRole[] = ["system", "user", "assistant", "tool", "reasoning"];
 	const [visibleRoles, setVisibleRoles] = useState<Set<MessageRole>>(new Set(allRoles));
+	const revealedMappingEntries = Object.entries(revealedMappings ?? {}).sort(([left], [right]) => left.localeCompare(right));
+
+	const handleRevealRedactionMapping = async () => {
+		if (!log?.id) return;
+
+		try {
+			const result = await revealLogRedactionMapping(log.id).unwrap();
+			setRevealedMappings(result.mapping ?? {});
+			setIsRevealDialogOpen(true);
+		} catch (error) {
+			toast.error("Failed to reveal redacted values", {
+				description: getErrorMessage(error),
+			});
+		}
+	};
 
 	if (!log) return null;
 
@@ -608,6 +631,16 @@ export function LogDetailView({
 									<Download className="h-4 w-4" />
 									Export as JSON
 								</DropdownMenuItem>
+								{canReveal ? (
+									<DropdownMenuItem
+										onClick={handleRevealRedactionMapping}
+										disabled={revealLoading}
+										data-testid="logdetails-reveal-redacted-values-button"
+									>
+										{revealLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+										Reveal redacted values
+									</DropdownMenuItem>
+								) : null}
 
 								{handleDelete ? (
 									<>
@@ -642,6 +675,33 @@ export function LogDetailView({
 						</AlertDialogContent>
 					</AlertDialog>
 				) : null}
+				<Dialog open={isRevealDialogOpen} onOpenChange={setIsRevealDialogOpen}>
+					<DialogContent className="sm:max-w-2xl" data-testid="logdetails-reveal-dialog">
+						<DialogHeader>
+							<DialogTitle>Redacted values</DialogTitle>
+							<DialogDescription>Original values for reversible placeholders in this log.</DialogDescription>
+						</DialogHeader>
+						{revealedMappingEntries.length > 0 ? (
+							<div className="border-border max-h-[55vh] overflow-auto rounded-sm border">
+								<div className="bg-muted/40 text-muted-foreground grid grid-cols-[minmax(120px,180px)_minmax(0,1fr)] gap-3 border-b px-3 py-2 text-[11px] uppercase">
+									<span>Placeholder</span>
+									<span>Original value</span>
+								</div>
+								{revealedMappingEntries.map(([placeholder, value]) => (
+									<div
+										key={placeholder}
+										className="border-border grid grid-cols-[minmax(120px,180px)_minmax(0,1fr)] gap-3 border-b px-3 py-2 last:border-b-0"
+									>
+										<code className="text-muted-foreground font-mono text-[12px] break-all">{placeholder}</code>
+										<code className="text-foreground font-mono text-[12px] break-all">{value}</code>
+									</div>
+								))}
+							</div>
+						) : (
+							<p className="text-muted-foreground text-sm">No reversible values were stored for this log.</p>
+						)}
+					</DialogContent>
+				</Dialog>
 			</div>
 			<div className="border-border rounded-sm border">
 				<div className="flex items-start justify-between gap-6 px-5 pt-5 pb-4">

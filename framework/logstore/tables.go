@@ -205,6 +205,7 @@ type Log struct {
 	IsLargePayloadRequest   bool      `gorm:"default:false" json:"is_large_payload_request"`
 	IsLargePayloadResponse  bool      `gorm:"default:false" json:"is_large_payload_response"`
 	HasObject               bool      `gorm:"default:false" json:"-"` // True when payload is stored in object storage
+	RedactionData           string    `gorm:"-" json:"-"`             // Transient guardrail redaction payload consumed by enterprise logstore wrappers
 
 	// Cluster governance fields - attached by the logging plugin when running in a cluster
 	// so that leaders can recover disconnected node usage from the logs table.
