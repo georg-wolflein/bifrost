@@ -237,7 +237,7 @@ const SidebarItemView = ({
 	}, []);
 	const hasSubItems = "subItems" in item && item.subItems && item.subItems.length > 0;
 	const isRouteMatch = (url: string) => {
-		if (url === "/workspace/custom-pricing" || || url === "/workspace/adaptive-routing") return pathname === url;
+		if (url === "/workspace/custom-pricing" || url === "/workspace/adaptive-routing") return pathname === url;
 		return pathname.startsWith(url);
 	};
 	const isAnySubItemActive =
@@ -686,118 +686,118 @@ export default function AppSidebar() {
 						description: "Per-user OAuth sessions",
 						hasAccess: hasMCPGatewayAccess,
 					},
-          {
-            title: "MCP Settings",
-            url: "/workspace/mcp-settings",
-            icon: Settings,
-            description: "MCP configuration",
-            hasAccess: hasMCPGatewayAccess,
-          },
-        ],
-      },
-      {
-        title: "Plugins",
-        url: "/workspace/plugins",
-        icon: Puzzle,
-        description: "Manage custom plugins",
-        hasAccess: hasPluginsAccess,
-      },
-      {
-        title: "Governance",
-        url: "/workspace/governance",
-        icon: Landmark,
-        description: "Virtual keys, users, teams, customers & roles",
-        hasAccess: hasAnyGovernanceAccess,
-        subItems: [
-          {
-            title: "Virtual Keys",
-            url: "/workspace/governance/virtual-keys",
-            icon: KeyRound,
-            description: "Manage virtual keys & access",
-            hasAccess: hasVirtualKeysAccess,
-          },
-          {
-            title: "Users",
-            url: "/workspace/governance/users",
-            icon: Users,
-            description: "Manage users",
-            hasAccess: hasUsersAccess,
-          },
-          {
-            title: "Teams",
-            url: "/workspace/governance/teams",
-            icon: Building,
-            description: "Manage teams",
-            hasAccess: hasTeamsAccess,
-          },
-          {
-            title: "Business Units",
-            url: "/workspace/governance/business-units",
-            icon: Building2,
-            description: "Manage business units",
-            hasAccess: hasBusinessUnitsAccess,
-          },
-          {
-            title: "Customers",
-            url: "/workspace/governance/customers",
-            icon: WalletCards,
-            description: "Manage customers",
-            hasAccess: hasCustomersAccess,
-          },
-          {
-            title: "User Provisioning",
-            url: "/workspace/scim",
-            icon: BookUser,
-            description: "User management and provisioning",
-            hasAccess: hasUserProvisioningAccess,
-          },
-          {
-            title: "Roles & Permissions",
-            url: "/workspace/governance/rbac",
-            icon: UserRoundCheck,
-            description: "User roles and permissions",
-            hasAccess: hasRbacAccess,
-          },
-          {
-            title: "Access Profiles",
-            url: "/workspace/governance/access-profiles",
-            icon: ShieldCheck,
-            description: "Manage access profiles for roles",
-            hasAccess: hasAccessProfilesAccess,
-          },
-          {
-            title: "Audit Logs",
-            url: "/workspace/audit-logs",
-            icon: ScrollText,
-            description: "Audit logs and compliance",
-            hasAccess: hasAuditLogsAccess,
-          },
-        ],
-      },
-      {
-        title: "Guardrails",
-        url: "/workspace/guardrails",
-        icon: Construction,
-        description: "Guardrails configuration",
-        hasAccess: hasGuardrailsConfigAccess || hasGuardrailsProvidersAccess,
-        subItems: [
-          {
-            title: "Rules",
-            url: "/workspace/guardrails/configuration",
-            icon: SearchCheck,
-            description: "Guardrail rules",
-            hasAccess: hasGuardrailsConfigAccess,
-          },
-          {
-            title: "Providers",
-            url: "/workspace/guardrails/providers",
-            icon: Boxes,
-            description: "Guardrail providers configuration",
-            hasAccess: hasGuardrailsProvidersAccess,
-          },
-        ],
-      },
-     	{
+					{
+						title: "MCP Settings",
+						url: "/workspace/mcp-settings",
+						icon: Settings,
+						description: "MCP configuration",
+						hasAccess: hasMCPGatewayAccess,
+					},
+				],
+			},
+			{
+				title: "Plugins",
+				url: "/workspace/plugins",
+				icon: Puzzle,
+				description: "Manage custom plugins",
+				hasAccess: hasPluginsAccess,
+			},
+			{
+				title: "Governance",
+				url: "/workspace/governance",
+				icon: Landmark,
+				description: "Virtual keys, users, teams, customers & roles",
+				hasAccess: hasAnyGovernanceAccess,
+				subItems: [
+					{
+						title: "Virtual Keys",
+						url: "/workspace/governance/virtual-keys",
+						icon: KeyRound,
+						description: "Manage virtual keys & access",
+						hasAccess: hasVirtualKeysAccess,
+					},
+					{
+						title: "Users",
+						url: "/workspace/governance/users",
+						icon: Users,
+						description: "Manage users",
+						hasAccess: hasUsersAccess,
+					},
+					{
+						title: "Teams",
+						url: "/workspace/governance/teams",
+						icon: Building,
+						description: "Manage teams",
+						hasAccess: hasTeamsAccess,
+					},
+					{
+						title: "Business Units",
+						url: "/workspace/governance/business-units",
+						icon: Building2,
+						description: "Manage business units",
+						hasAccess: hasBusinessUnitsAccess,
+					},
+					{
+						title: "Customers",
+						url: "/workspace/governance/customers",
+						icon: WalletCards,
+						description: "Manage customers",
+						hasAccess: hasCustomersAccess,
+					},
+					{
+						title: "User Provisioning",
+						url: "/workspace/scim",
+						icon: BookUser,
+						description: "User management and provisioning",
+						hasAccess: hasUserProvisioningAccess,
+					},
+					{
+						title: "Roles & Permissions",
+						url: "/workspace/governance/rbac",
+						icon: UserRoundCheck,
+						description: "User roles and permissions",
+						hasAccess: hasRbacAccess,
+					},
+					{
+						title: "Access Profiles",
+						url: "/workspace/governance/access-profiles",
+						icon: ShieldCheck,
+						description: "Manage access profiles for roles",
+						hasAccess: hasAccessProfilesAccess,
+					},
+					{
+						title: "Audit Logs",
+						url: "/workspace/audit-logs",
+						icon: ScrollText,
+						description: "Audit logs and compliance",
+						hasAccess: hasAuditLogsAccess,
+					},
+				],
+			},
+			{
+				title: "Guardrails",
+				url: "/workspace/guardrails",
+				icon: Construction,
+				description: "Guardrails configuration",
+				hasAccess: hasGuardrailsConfigAccess || hasGuardrailsProvidersAccess,
+				subItems: [
+					{
+						title: "Rules",
+						url: "/workspace/guardrails/configuration",
+						icon: SearchCheck,
+						description: "Guardrail rules",
+						hasAccess: hasGuardrailsConfigAccess,
+					},
+					{
+						title: "Providers",
+						url: "/workspace/guardrails/providers",
+						icon: Boxes,
+						description: "Guardrail providers configuration",
+						hasAccess: hasGuardrailsProvidersAccess,
+					},
+				],
+			},
+			{
 				title: "Edge Control",
 				icon: Hexagon,
 				description: "Edge device management",
@@ -827,162 +827,161 @@ export default function AppSidebar() {
 					},
 				],
 			},
-      {
-        title: "Cluster Config",
-        url: "/workspace/cluster",
-        icon: Network,
-        description: "Manage Bifrost cluster",
-        hasAccess: hasClusterConfigAccess,
-      },
-      {
-        title: "Adaptive Routing",
-        url: "/workspace/adaptive-routing",
-        icon: Shuffle,
-        description: "Manage adaptive routing",
-        hasAccess: isAdaptiveRoutingAllowed,
-        subItems: [
-          {
-            title: "Dashboard",
-            url: "/workspace/adaptive-routing",
-            icon: ChartColumnBig,
-            description: "Adaptive routing metrics",
-            hasAccess: isAdaptiveRoutingAllowed,
-          },
-          {
-            title: "Settings",
-            url: "/workspace/adaptive-routing/settings",
-            icon: Settings,
-            description: "Adaptive routing settings",
-            hasAccess: isAdaptiveRoutingAllowed,
-          },
-        ],
-      },
-      ...(isDbConnected
-        ? [
-            {
-              title: "Prompt Repository",
-              url: "/workspace/prompt-repo",
-              icon: FolderGit,
-              description: "Prompt repository",
-              hasAccess: hasPromptRepositoryAccess,
-            },
-          ]
-        : []),
-      {
-        title: "Evals",
-        url: "https://www.getmaxim.ai",
-        icon: FlaskConical,
-        isExternal: true,
-        description: "Evaluations",
-        hasAccess: true,
-      },
-      {
-        title: "Settings",
-        url: "/workspace/config",
-        icon: Settings2Icon,
-        description: "Bifrost settings",
-        hasAccess:
-          hasSettingsAccess || hasAuditLogsAccess || hasUserProvisioningAccess,
-        subItems: [
-          {
-            title: "Client Settings",
-            url: "/workspace/config/client-settings",
-            icon: Settings,
-            description: "Client configuration settings",
-            hasAccess: hasSettingsAccess,
-          },
-          {
-            title: "Compatibility",
-            url: "/workspace/config/compatibility",
-            icon: Plug,
-            description: "Compatibility conversion settings",
-            hasAccess: hasSettingsAccess,
-          },
-          {
-            title: "Caching",
-            url: "/workspace/config/caching",
-            icon: DatabaseZap,
-            description: "Caching configuration",
-            hasAccess: hasSettingsAccess,
-          },
-          {
-            title: "Security",
-            url: "/workspace/config/security",
-            icon: ShieldCheck,
-            description: "Security settings",
-            hasAccess: hasSettingsAccess,
-          },
-          ...(IS_ENTERPRISE
-            ? [
-                {
-                  title: "Proxy",
-                  url: "/workspace/config/proxy",
-                  icon: Globe,
-                  description: "Proxy configuration",
-                  hasAccess: hasSettingsAccess,
-                },
-              ]
-            : []),
-          {
-            title: "API Keys",
-            url: "/workspace/config/api-keys",
-            icon: KeyRound,
-            description: "API keys management",
-            hasAccess: hasAPIKeyAccess,
-          },
-          {
-            title: "Performance Tuning",
-            url: "/workspace/config/performance-tuning",
-            icon: TrendingUp,
-            description: "Performance tuning settings",
-            hasAccess: hasSettingsAccess,
-          },
-          {
-            title: "Feature Flags",
-            url: "/workspace/config/feature-flags",
-            icon: Flag,
-            description: "Toggle feature flags",
-            hasAccess: hasFeatureFlagsAccess,
-          },
-        ],
-      },
-    ],
-    [
-      hasLogsAccess,
-      hasAPIKeyAccess,
-      hasObservabilityAccess,
-      hasDashboardAccess,
-      hasModelProvidersAccess,
-      hasMCPGatewayAccess,
-      hasMCPToolGroupsAccess,
-      hasMCPLogsAccess,
-      hasPluginsAccess,
-      hasUsersAccess,
-      hasUserProvisioningAccess,
-      hasAuditLogsAccess,
-      hasCustomersAccess,
-      hasTeamsAccess,
-      hasBusinessUnitsAccess,
-      hasRbacAccess,
-      hasVirtualKeysAccess,
-      hasGovernanceLegacyAccess,
-      hasAnyGovernanceAccess,
-      hasRoutingRulesAccess,
-      hasGuardrailsProvidersAccess,
-      hasGuardrailsConfigAccess,
-      hasClusterConfigAccess,
-      isAdaptiveRoutingAllowed,
-      hasSettingsAccess,
-      hasPromptRepositoryAccess,
-      hasAccessProfilesAccess,
-      hasFeatureFlagsAccess,
-      hasDevicesAccess,
+			{
+				title: "Cluster Config",
+				url: "/workspace/cluster",
+				icon: Network,
+				description: "Manage Bifrost cluster",
+				hasAccess: hasClusterConfigAccess,
+			},
+			{
+				title: "Adaptive Routing",
+				url: "/workspace/adaptive-routing",
+				icon: Shuffle,
+				description: "Manage adaptive routing",
+				hasAccess: isAdaptiveRoutingAllowed,
+				subItems: [
+					{
+						title: "Dashboard",
+						url: "/workspace/adaptive-routing",
+						icon: ChartColumnBig,
+						description: "Adaptive routing metrics",
+						hasAccess: isAdaptiveRoutingAllowed,
+					},
+					{
+						title: "Settings",
+						url: "/workspace/adaptive-routing/settings",
+						icon: Settings,
+						description: "Adaptive routing settings",
+						hasAccess: isAdaptiveRoutingAllowed,
+					},
+				],
+			},
+			...(isDbConnected
+				? [
+						{
+							title: "Prompt Repository",
+							url: "/workspace/prompt-repo",
+							icon: FolderGit,
+							description: "Prompt repository",
+							hasAccess: hasPromptRepositoryAccess,
+						},
+					]
+				: []),
+			{
+				title: "Evals",
+				url: "https://www.getmaxim.ai",
+				icon: FlaskConical,
+				isExternal: true,
+				description: "Evaluations",
+				hasAccess: true,
+			},
+			{
+				title: "Settings",
+				url: "/workspace/config",
+				icon: Settings2Icon,
+				description: "Bifrost settings",
+				hasAccess: hasSettingsAccess || hasAuditLogsAccess || hasUserProvisioningAccess,
+				subItems: [
+					{
+						title: "Client Settings",
+						url: "/workspace/config/client-settings",
+						icon: Settings,
+						description: "Client configuration settings",
+						hasAccess: hasSettingsAccess,
+					},
+					{
+						title: "Compatibility",
+						url: "/workspace/config/compatibility",
+						icon: Plug,
+						description: "Compatibility conversion settings",
+						hasAccess: hasSettingsAccess,
+					},
+					{
+						title: "Caching",
+						url: "/workspace/config/caching",
+						icon: DatabaseZap,
+						description: "Caching configuration",
+						hasAccess: hasSettingsAccess,
+					},
+					{
+						title: "Security",
+						url: "/workspace/config/security",
+						icon: ShieldCheck,
+						description: "Security settings",
+						hasAccess: hasSettingsAccess,
+					},
+					...(IS_ENTERPRISE
+						? [
+								{
+									title: "Proxy",
+									url: "/workspace/config/proxy",
+									icon: Globe,
+									description: "Proxy configuration",
+									hasAccess: hasSettingsAccess,
+								},
+							]
+						: []),
+					{
+						title: "API Keys",
+						url: "/workspace/config/api-keys",
+						icon: KeyRound,
+						description: "API keys management",
+						hasAccess: hasAPIKeyAccess,
+					},
+					{
+						title: "Performance Tuning",
+						url: "/workspace/config/performance-tuning",
+						icon: TrendingUp,
+						description: "Performance tuning settings",
+						hasAccess: hasSettingsAccess,
+					},
+					{
+						title: "Feature Flags",
+						url: "/workspace/config/feature-flags",
+						icon: Flag,
+						description: "Toggle feature flags",
+						hasAccess: hasFeatureFlagsAccess,
+					},
+				],
+			},
+		],
+		[
+			hasLogsAccess,
+			hasAPIKeyAccess,
+			hasObservabilityAccess,
+			hasDashboardAccess,
+			hasModelProvidersAccess,
+			hasMCPGatewayAccess,
+			hasMCPToolGroupsAccess,
+			hasMCPLogsAccess,
+			hasPluginsAccess,
+			hasUsersAccess,
+			hasUserProvisioningAccess,
+			hasAuditLogsAccess,
+			hasCustomersAccess,
+			hasTeamsAccess,
+			hasBusinessUnitsAccess,
+			hasRbacAccess,
+			hasVirtualKeysAccess,
+			hasGovernanceLegacyAccess,
+			hasAnyGovernanceAccess,
+			hasRoutingRulesAccess,
+			hasGuardrailsProvidersAccess,
+			hasGuardrailsConfigAccess,
+			hasClusterConfigAccess,
+			isAdaptiveRoutingAllowed,
+			hasSettingsAccess,
+			hasPromptRepositoryAccess,
+			hasAccessProfilesAccess,
+			hasFeatureFlagsAccess,
+			hasDevicesAccess,
 			hasInventoryAccess,
 			hasEdgeConfigAccess,
 			hasAnyEdgeControlAccess,
-      isDbConnected,
-    ],
-  );
+			isDbConnected,
+		],
+	);
 
 	const accessibleItems: SidebarItem[] = useMemo(() => {
 		return items
@@ -1046,22 +1045,22 @@ export default function AppSidebar() {
 		setMounted(true);
 	}, []);
 
-  // Auto-expand items when their subitems are active
-  useEffect(() => {
-    const newExpandedItems = new Set<string>();
-    const isRouteMatch = (url: string) => {
-      if (url === "/workspace/custom-pricing" || url === "/workspace/adaptive-routing") return pathname === url;
-      return pathname.startsWith(url);
-    };
-    items.forEach((item) => {
-      if (item.subItems?.some((subItem) => isRouteMatch(subItem.url))) {
-        newExpandedItems.add(item.title);
-      }
-    });
-    if (newExpandedItems.size > 0) {
-      setExpandedItems((prev) => new Set([...prev, ...newExpandedItems]));
-    }
-  }, [pathname, items]);
+	// Auto-expand items when their subitems are active
+	useEffect(() => {
+		const newExpandedItems = new Set<string>();
+		const isRouteMatch = (url: string) => {
+			if (url === "/workspace/custom-pricing" || url === "/workspace/adaptive-routing") return pathname === url;
+			return pathname.startsWith(url);
+		};
+		items.forEach((item) => {
+			if (item.subItems?.some((subItem) => isRouteMatch(subItem.url))) {
+				newExpandedItems.add(item.title);
+			}
+		});
+		if (newExpandedItems.size > 0) {
+			setExpandedItems((prev) => new Set([...prev, ...newExpandedItems]));
+		}
+	}, [pathname, items]);
 
 	// Auto-expand parents when search matches their subItems
 	useEffect(() => {
