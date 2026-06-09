@@ -21,6 +21,22 @@ import (
 type EntityWiseBudgets map[string][]*configstoreTables.TableBudget
 type EntityWiseRateLimits map[string][]*configstoreTables.TableRateLimit
 
+// OwnerScope identifies the entity that owns a budget or rate limit for
+// alert-evaluation purposes. Type is one of "virtual_key", "team", "customer",
+// "provider", or "global"; ID is the owning entity's identifier ("" for global).
+// It mirrors the owner-scope derivation used by EachBudget/EachRateLimit so the
+// alerting layer can evaluate only the scopes a request touched.
+type OwnerScope struct {
+	Type string
+	ID   string
+}
+
+// ownerScopeIndexTTL bounds how often the owner-scope reverse index is rebuilt.
+// Rebuilds are full scans of the hot budget/rate-limit maps, so throttling keeps
+// per-request cost at O(touched scopes) regardless of request rate while keeping
+// staleness for newly created entities below this bound.
+const ownerScopeIndexTTL = time.Second
+
 // LocalGovernanceStore provides in-memory cache for governance data with fast, non-blocking access
 type LocalGovernanceStore struct {
 	// Core data maps using sync.Map for lock-free reads
@@ -50,6 +66,20 @@ type LocalGovernanceStore struct {
 
 	// Model catalog for cross-provider model matching (optional)
 	modelCatalog *modelcatalog.ModelCatalog
+
+	// ownerScopeIndex maps an OwnerScope to the budget / rate-limit IDs it owns.
+	// It lets the alerting layer evaluate only the scopes touched by a request
+	// instead of scanning every budget and rate limit on every usage update.
+	// The maps are rebuilt wholesale (never mutated in place) at most once per
+	// ownerScopeIndexTTL from the hot maps using the same owner-scope derivation
+	// as EachBudget/EachRateLimit, so the index tolerates config churn without
+	// per-mutation bookkeeping. ownerScopeIndexMu guards rebuilds and the pointer
+	// reads; the returned maps are safe to iterate without the lock.
+	ownerScopeIndexMu      sync.Mutex
+	ownerScopeBudgets      map[OwnerScope][]string
+	ownerScopeTokenLimits  map[OwnerScope][]string
+	ownerScopeReqLimits    map[OwnerScope][]string
+	ownerScopeIndexBuiltAt time.Time
 
 	// Logger
 	logger schemas.Logger
@@ -115,6 +145,15 @@ type GovernanceStore interface {
 	// independent dimensions stored in the same row. A rate limit may have only request
 	// limits, only token limits, or both.
 	EachRequestLimit(fn func(rateLimitID string, requestCurrentUsage, requestMaxLimit int64, ownerScopeType, ownerScopeID string))
+	// EachBudgetForScopes is the scope-targeted analogue of EachBudget: it calls
+	// fn only for budgets owned by one of the given scopes, via the owner-scope
+	// reverse index, so the consumer can evaluate just the scopes a request
+	// touched instead of scanning every budget on every usage update.
+	EachBudgetForScopes(scopes []OwnerScope, fn func(budgetID string, currentUsage, maxLimit float64, ownerScopeType, ownerScopeID string))
+	// EachRateLimitForScopes is the scope-targeted analogue of EachRateLimit.
+	EachRateLimitForScopes(scopes []OwnerScope, fn func(rateLimitID string, tokenCurrentUsage, tokenMaxLimit int64, ownerScopeType, ownerScopeID string))
+	// EachRequestLimitForScopes is the scope-targeted analogue of EachRequestLimit.
+	EachRequestLimitForScopes(scopes []OwnerScope, fn func(rateLimitID string, requestCurrentUsage, requestMaxLimit int64, ownerScopeType, ownerScopeID string))
 	// Budget crud.
 	// UpsertBudgetConfig preserves in-memory CurrentUsage/LastReset on replacement —
 	// use it for every config publish (fresh load or admin edit) so a concurrent
@@ -2149,6 +2188,134 @@ func (gs *LocalGovernanceStore) EachRequestLimit(fn func(rateLimitID string, req
 		}
 		return true
 	})
+}
+
+// ensureOwnerScopeIndex returns the owner-scope reverse index, rebuilding it
+// from the hot maps if it is missing or older than ownerScopeIndexTTL. The
+// returned maps are immutable snapshots (replaced wholesale on rebuild) and are
+// safe to iterate after the lock is released. Buckets are keyed exactly as
+// ownerScopeFromBudget / ownerScopeFromRateLimit derive them, so a lookup for a
+// scope yields the same budgets/rate limits EachBudget/EachRateLimit would
+// attribute to that scope.
+func (gs *LocalGovernanceStore) ensureOwnerScopeIndex() (budgets, tokenLimits, reqLimits map[OwnerScope][]string) {
+	gs.ownerScopeIndexMu.Lock()
+	defer gs.ownerScopeIndexMu.Unlock()
+	if gs.ownerScopeBudgets == nil || time.Since(gs.ownerScopeIndexBuiltAt) > ownerScopeIndexTTL {
+		gs.rebuildOwnerScopeIndexLocked()
+	}
+	return gs.ownerScopeBudgets, gs.ownerScopeTokenLimits, gs.ownerScopeReqLimits
+}
+
+// rebuildOwnerScopeIndexLocked rebuilds the owner-scope reverse index from the
+// hot budget/rate-limit maps. Callers must hold ownerScopeIndexMu.
+func (gs *LocalGovernanceStore) rebuildOwnerScopeIndexLocked() {
+	budgets := make(map[OwnerScope][]string)
+	tokenLimits := make(map[OwnerScope][]string)
+	reqLimits := make(map[OwnerScope][]string)
+	gs.budgets.Range(func(key, value any) bool {
+		if b, ok := value.(*configstoreTables.TableBudget); ok && b != nil {
+			scopeType, scopeID := ownerScopeFromBudget(b)
+			s := OwnerScope{Type: scopeType, ID: scopeID}
+			budgets[s] = append(budgets[s], key.(string))
+		}
+		return true
+	})
+	gs.rateLimits.Range(func(key, value any) bool {
+		if rl, ok := value.(*configstoreTables.TableRateLimit); ok && rl != nil {
+			scopeType, scopeID := ownerScopeFromRateLimit(rl)
+			s := OwnerScope{Type: scopeType, ID: scopeID}
+			if rl.TokenMaxLimit != nil {
+				tokenLimits[s] = append(tokenLimits[s], key.(string))
+			}
+			if rl.RequestMaxLimit != nil {
+				reqLimits[s] = append(reqLimits[s], key.(string))
+			}
+		}
+		return true
+	})
+	gs.ownerScopeBudgets = budgets
+	gs.ownerScopeTokenLimits = tokenLimits
+	gs.ownerScopeReqLimits = reqLimits
+	gs.ownerScopeIndexBuiltAt = time.Now()
+}
+
+// dedupeScopes returns scopes with duplicates removed, preserving order. Keeps
+// the per-request scope set small so the For-scopes iterators never revisit the
+// same bucket twice.
+func dedupeScopes(scopes []OwnerScope) []OwnerScope {
+	if len(scopes) <= 1 {
+		return scopes
+	}
+	seen := make(map[OwnerScope]struct{}, len(scopes))
+	out := scopes[:0:0]
+	for _, s := range scopes {
+		if _, dup := seen[s]; dup {
+			continue
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+	return out
+}
+
+// EachBudgetForScopes calls fn for every budget owned by one of the given
+// scopes, reading live usage from the hot map. Unlike EachBudget it does not
+// scan every budget: it consults the owner-scope reverse index, so cost is
+// O(budgets owned by the touched scopes) rather than O(all budgets). The owner
+// scope passed to fn is the bucket's scope, identical to what EachBudget would
+// report for the same budget.
+func (gs *LocalGovernanceStore) EachBudgetForScopes(scopes []OwnerScope, fn func(budgetID string, currentUsage, maxLimit float64, ownerScopeType, ownerScopeID string)) {
+	if fn == nil || len(scopes) == 0 {
+		return
+	}
+	budgetsIdx, _, _ := gs.ensureOwnerScopeIndex()
+	for _, s := range dedupeScopes(scopes) {
+		for _, id := range budgetsIdx[s] {
+			if value, ok := gs.budgets.Load(id); ok {
+				if b, ok := value.(*configstoreTables.TableBudget); ok && b != nil {
+					fn(id, b.CurrentUsage, b.MaxLimit, s.Type, s.ID)
+				}
+			}
+		}
+	}
+}
+
+// EachRateLimitForScopes calls fn for every token-limited rate limit owned by
+// one of the given scopes, reading live usage from the hot map. It is the
+// scope-targeted analogue of EachRateLimit.
+func (gs *LocalGovernanceStore) EachRateLimitForScopes(scopes []OwnerScope, fn func(rateLimitID string, tokenCurrentUsage, tokenMaxLimit int64, ownerScopeType, ownerScopeID string)) {
+	if fn == nil || len(scopes) == 0 {
+		return
+	}
+	_, tokenIdx, _ := gs.ensureOwnerScopeIndex()
+	for _, s := range dedupeScopes(scopes) {
+		for _, id := range tokenIdx[s] {
+			if value, ok := gs.rateLimits.Load(id); ok {
+				if rl, ok := value.(*configstoreTables.TableRateLimit); ok && rl != nil && rl.TokenMaxLimit != nil {
+					fn(id, rl.TokenCurrentUsage, *rl.TokenMaxLimit, s.Type, s.ID)
+				}
+			}
+		}
+	}
+}
+
+// EachRequestLimitForScopes calls fn for every request-limited rate limit owned
+// by one of the given scopes, reading live usage from the hot map. It is the
+// scope-targeted analogue of EachRequestLimit.
+func (gs *LocalGovernanceStore) EachRequestLimitForScopes(scopes []OwnerScope, fn func(rateLimitID string, requestCurrentUsage, requestMaxLimit int64, ownerScopeType, ownerScopeID string)) {
+	if fn == nil || len(scopes) == 0 {
+		return
+	}
+	_, _, reqIdx := gs.ensureOwnerScopeIndex()
+	for _, s := range dedupeScopes(scopes) {
+		for _, id := range reqIdx[s] {
+			if value, ok := gs.rateLimits.Load(id); ok {
+				if rl, ok := value.(*configstoreTables.TableRateLimit); ok && rl != nil && rl.RequestMaxLimit != nil {
+					fn(id, rl.RequestCurrentUsage, *rl.RequestMaxLimit, s.Type, s.ID)
+				}
+			}
+		}
+	}
 }
 
 // DATABASE METHODS
